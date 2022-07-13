@@ -19,9 +19,9 @@ import mmcv
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner.dist_utils import get_dist_info
 
-ENV_MMCV_HOME = 'MMCV_HOME'
-ENV_XDG_CACHE_HOME = 'XDG_CACHE_HOME'
-DEFAULT_CACHE_DIR = '~/.cache'
+ENV_MMCV_HOME = "MMCV_HOME"
+ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
+DEFAULT_CACHE_DIR = "~/.cache"
 
 
 def load_state_dict(module, state_dict, strict=False, logger=None):
@@ -44,54 +44,56 @@ def load_state_dict(module, state_dict, strict=False, logger=None):
     all_missing_keys = []
     err_msg = []
 
-    metadata = getattr(state_dict, '_metadata', None)
+    metadata = getattr(state_dict, "_metadata", None)
     state_dict = state_dict.copy()
     if metadata is not None:
         state_dict._metadata = metadata
 
     # use _load_from_state_dict to enable checkpoint version control
-    def load(module, prefix=''):
+    def load(module, prefix=""):
         # recursively check parallel module in case that the model has a
         # complicated structure, e.g., nn.Module(nn.Module(DDP))
         if is_module_wrapper(module):
             module = module.module
-        local_metadata = {} if metadata is None else metadata.get(
-            prefix[:-1], {})
-        module._load_from_state_dict(state_dict, prefix, local_metadata, True,
-                                     all_missing_keys, unexpected_keys,
-                                     err_msg)
+        local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+        module._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            True,
+            all_missing_keys,
+            unexpected_keys,
+            err_msg,
+        )
         for name, child in module._modules.items():
             if child is not None:
-                load(child, prefix + name + '.')
+                load(child, prefix + name + ".")
 
     load(module)
     load = None  # break load->load reference cycle
 
     # ignore "num_batches_tracked" of BN layers
-    missing_keys = [
-        key for key in all_missing_keys if 'num_batches_tracked' not in key
-    ]
+    missing_keys = [key for key in all_missing_keys if "num_batches_tracked" not in key]
 
     if unexpected_keys:
-        err_msg.append('unexpected key in source '
-                       f'state_dict: {", ".join(unexpected_keys)}\n')
+        err_msg.append(
+            "unexpected key in source " f'state_dict: {", ".join(unexpected_keys)}\n'
+        )
     if missing_keys:
         err_msg.append(
-            f'missing keys in source state_dict: {", ".join(missing_keys)}\n')
+            f'missing keys in source state_dict: {", ".join(missing_keys)}\n'
+        )
 
     rank, _ = get_dist_info()
     if len(err_msg) > 0 and rank == 0:
-        err_msg.insert(
-            0, 'The model and loaded state dict do not match exactly\n')
-        err_msg = '\n'.join(err_msg)
+        err_msg.insert(0, "The model and loaded state dict do not match exactly\n")
+        err_msg = "\n".join(err_msg)
         if strict:
             raise RuntimeError(err_msg)
         elif logger is not None:
             logger.warning(err_msg)
         else:
             print(err_msg)
-
-
 
 
 class CheckpointLoader:
@@ -110,11 +112,13 @@ class CheckpointLoader:
                 cls._schemes[prefix] = loader
             else:
                 raise KeyError(
-                    f'{prefix} is already registered as a loader backend, '
-                    'add "force=True" if you want to override it')
+                    f"{prefix} is already registered as a loader backend, "
+                    'add "force=True" if you want to override it'
+                )
         # sort, longer prefixes take priority
         cls._schemes = OrderedDict(
-            sorted(cls._schemes.items(), key=lambda t: t[0], reverse=True))
+            sorted(cls._schemes.items(), key=lambda t: t[0], reverse=True)
+        )
 
     @classmethod
     def register_scheme(cls, prefixes, loader=None, force=False):
@@ -176,9 +180,9 @@ class CheckpointLoader:
         checkpoint_loader = cls._get_checkpoint_loader(filename)
         class_name = checkpoint_loader.__name__
         mmcv.print_log(
-            f'load checkpoint from {class_name[10:]} path: {filename}', logger)
+            f"load checkpoint from {class_name[10:]} path: {filename}", logger
+        )
         return checkpoint_loader(filename, map_location)
-
 
 
 def _load_checkpoint(filename, map_location=None, logger=None):
@@ -201,12 +205,14 @@ def _load_checkpoint(filename, map_location=None, logger=None):
     return CheckpointLoader.load_checkpoint(filename, map_location, logger)
 
 
-def load_checkpoint(model,
-                    filename,
-                    map_location=None,
-                    strict=False,
-                    logger=None,
-                    revise_keys=[(r'^module\.', '')]):
+def load_checkpoint(
+    model,
+    filename,
+    map_location=None,
+    strict=False,
+    logger=None,
+    revise_keys=[(r"^module\.", "")],
+):
     """Load checkpoint from a file or URI.
 
     Args:
@@ -229,27 +235,25 @@ def load_checkpoint(model,
     checkpoint = _load_checkpoint(filename, map_location, logger)
     # OrderedDict is a subclass of dict
     if not isinstance(checkpoint, dict):
-        raise RuntimeError(
-            f'No state_dict found in checkpoint file {filename}')
+        raise RuntimeError(f"No state_dict found in checkpoint file {filename}")
     # get state_dict from checkpoint
-    import pdb; pdb.set_trace()
-    if 'state_dict' in checkpoint:
-        state_dict = checkpoint['state_dict']
-    elif 'model' in checkpoint:
-        state_dict = checkpoint['model']
+    import pdb
+
+    pdb.set_trace()
+    if "state_dict" in checkpoint:
+        state_dict = checkpoint["state_dict"]
+    elif "model" in checkpoint:
+        state_dict = checkpoint["model"]
     else:
         state_dict = checkpoint
 
     # strip prefix of state_dict
-    metadata = getattr(state_dict, '_metadata', OrderedDict())
+    metadata = getattr(state_dict, "_metadata", OrderedDict())
     for p, r in revise_keys:
-        state_dict = OrderedDict(
-            {re.sub(p, r, k): v
-             for k, v in state_dict.items()})
+        state_dict = OrderedDict({re.sub(p, r, k): v for k, v in state_dict.items()})
     # Keep metadata in state_dict
     state_dict._metadata = metadata
 
     # load state_dict
     load_state_dict(model, state_dict, strict, logger)
     return checkpoint
-

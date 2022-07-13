@@ -6,17 +6,19 @@ from numpy import random
 from mmseg.datasets.builder import PIPELINES
 from IPython import embed
 
+
 @PIPELINES.register_module()
 class AlignResize(object):
-    """Resize images & seg. Align
-    """
+    """Resize images & seg. Align"""
 
-    def __init__(self,
-                 img_scale=None,
-                 multiscale_mode='range',
-                 ratio_range=None,
-                 keep_ratio=True,
-                 size_divisor=32):
+    def __init__(
+        self,
+        img_scale=None,
+        multiscale_mode="range",
+        ratio_range=None,
+        keep_ratio=True,
+        size_divisor=32,
+    ):
         if img_scale is None:
             self.img_scale = None
         else:
@@ -32,7 +34,7 @@ class AlignResize(object):
             assert self.img_scale is None or len(self.img_scale) == 1
         else:
             # mode 3 and 4: given multiple scales or a range of scales
-            assert multiscale_mode in ['value', 'range']
+            assert multiscale_mode in ["value", "range"]
 
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
@@ -75,12 +77,8 @@ class AlignResize(object):
         assert mmcv.is_list_of(img_scales, tuple) and len(img_scales) == 2
         img_scale_long = [max(s) for s in img_scales]
         img_scale_short = [min(s) for s in img_scales]
-        long_edge = np.random.randint(
-            min(img_scale_long),
-            max(img_scale_long) + 1)
-        short_edge = np.random.randint(
-            min(img_scale_short),
-            max(img_scale_short) + 1)
+        long_edge = np.random.randint(min(img_scale_long), max(img_scale_long) + 1)
+        short_edge = np.random.randint(min(img_scale_short), max(img_scale_short) + 1)
         img_scale = (long_edge, short_edge)
         return img_scale, None
 
@@ -131,23 +129,23 @@ class AlignResize(object):
 
         if self.ratio_range is not None:
             if self.img_scale is None:
-                h, w = results['img'].shape[:2]
-                scale, scale_idx = self.random_sample_ratio((w, h),
-                                                            self.ratio_range)
+                h, w = results["img"].shape[:2]
+                scale, scale_idx = self.random_sample_ratio((w, h), self.ratio_range)
             else:
                 scale, scale_idx = self.random_sample_ratio(
-                    self.img_scale[0], self.ratio_range)
+                    self.img_scale[0], self.ratio_range
+                )
         elif len(self.img_scale) == 1:
             scale, scale_idx = self.img_scale[0], 0
-        elif self.multiscale_mode == 'range':
+        elif self.multiscale_mode == "range":
             scale, scale_idx = self.random_sample(self.img_scale)
-        elif self.multiscale_mode == 'value':
+        elif self.multiscale_mode == "value":
             scale, scale_idx = self.random_select(self.img_scale)
         else:
             raise NotImplementedError
 
-        results['scale'] = scale
-        results['scale_idx'] = scale_idx
+        results["scale"] = scale
+        results["scale_idx"] = scale_idx
 
     def _align(self, img, size_divisor, interpolation=None):
         align_h = int(np.ceil(img.shape[0] / size_divisor)) * size_divisor
@@ -162,45 +160,50 @@ class AlignResize(object):
         """Resize images with ``results['scale']``."""
         if self.keep_ratio:
             img, scale_factor = mmcv.imrescale(
-                results['img'], results['scale'], return_scale=True)
+                results["img"], results["scale"], return_scale=True
+            )
             #### align ####
             img = self._align(img, self.size_divisor)
             # the w_scale and h_scale has minor difference
             # a real fix should be done in the mmcv.imrescale in the future
             new_h, new_w = img.shape[:2]
-            h, w = results['img'].shape[:2]
+            h, w = results["img"].shape[:2]
             w_scale = new_w / w
             h_scale = new_h / h
         else:
             img, w_scale, h_scale = mmcv.imresize(
-                results['img'], results['scale'], return_scale=True)
+                results["img"], results["scale"], return_scale=True
+            )
 
             h, w = img.shape[:2]
-            assert int(np.ceil(h / self.size_divisor)) * self.size_divisor == h and \
-                   int(np.ceil(w / self.size_divisor)) * self.size_divisor == w, \
-                   "img size not align. h:{} w:{}".format(h,w)
-        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                dtype=np.float32)
-        results['img'] = img
-        results['img_shape'] = img.shape
-        results['pad_shape'] = img.shape  # in case that there is no padding
-        results['scale_factor'] = scale_factor
-        results['keep_ratio'] = self.keep_ratio
+            assert (
+                int(np.ceil(h / self.size_divisor)) * self.size_divisor == h
+                and int(np.ceil(w / self.size_divisor)) * self.size_divisor == w
+            ), "img size not align. h:{} w:{}".format(h, w)
+        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
+        results["img"] = img
+        results["img_shape"] = img.shape
+        results["pad_shape"] = img.shape  # in case that there is no padding
+        results["scale_factor"] = scale_factor
+        results["keep_ratio"] = self.keep_ratio
 
     def _resize_seg(self, results):
         """Resize semantic segmentation map with ``results['scale']``."""
-        for key in results.get('seg_fields', []):
+        for key in results.get("seg_fields", []):
             if self.keep_ratio:
                 gt_seg = mmcv.imrescale(
-                    results[key], results['scale'], interpolation='nearest')
-                gt_seg = self._align(gt_seg, self.size_divisor, interpolation='nearest')
+                    results[key], results["scale"], interpolation="nearest"
+                )
+                gt_seg = self._align(gt_seg, self.size_divisor, interpolation="nearest")
             else:
                 gt_seg = mmcv.imresize(
-                    results[key], results['scale'], interpolation='nearest')
+                    results[key], results["scale"], interpolation="nearest"
+                )
                 h, w = gt_seg.shape[:2]
-                assert int(np.ceil(h / self.size_divisor)) * self.size_divisor == h and \
-                       int(np.ceil(w / self.size_divisor)) * self.size_divisor == w, \
-                    "gt_seg size not align. h:{} w:{}".format(h, w)
+                assert (
+                    int(np.ceil(h / self.size_divisor)) * self.size_divisor == h
+                    and int(np.ceil(w / self.size_divisor)) * self.size_divisor == w
+                ), "gt_seg size not align. h:{} w:{}".format(h, w)
             results[key] = gt_seg
 
     def __call__(self, results):
@@ -215,7 +218,7 @@ class AlignResize(object):
                 'keep_ratio' keys are added into result dict.
         """
 
-        if 'scale' not in results:
+        if "scale" not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_seg(results)
@@ -223,8 +226,10 @@ class AlignResize(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += (f'(img_scale={self.img_scale}, '
-                     f'multiscale_mode={self.multiscale_mode}, '
-                     f'ratio_range={self.ratio_range}, '
-                     f'keep_ratio={self.keep_ratio})')
+        repr_str += (
+            f"(img_scale={self.img_scale}, "
+            f"multiscale_mode={self.multiscale_mode}, "
+            f"ratio_range={self.ratio_range}, "
+            f"keep_ratio={self.keep_ratio})"
+        )
         return repr_str
