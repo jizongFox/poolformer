@@ -136,7 +136,7 @@ class Pooling(nn.Module):
     --pool_size: pooling size
     """
 
-    def __init__(self, pool_size=3):
+    def __init__(self, pool_size=3, **kwargs: t.Any):
         super().__init__()
         self.pool = nn.AvgPool2d(
             pool_size, stride=1, padding=pool_size // 2, count_include_pad=False

@@ -14,14 +14,16 @@
 """
 MetaFormer implementation with hybrid stages
 """
+import typing as t
 from functools import partial, reduce
-from typing import Sequence
+from typing import Sequence, Tuple, Callable, Union, Optional, Type
 
 import torch
 import torch.nn as nn
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.layers import DropPath, trunc_normal_
 from timm.models.registry import register_model
+from torch import Tensor
 
 from .poolformer import PatchEmbed, LayerNormChannel, GroupNorm, Mlp, Pooling
 
@@ -47,7 +49,7 @@ class AddPositionEmb(nn.Module):
     def __init__(
         self,
         dim=384,
-        spatial_shape=[14, 14],
+        spatial_shape: Sequence[int] = (14, 14),
     ):
         super().__init__()
         if isinstance(spatial_shape, int):
@@ -117,7 +119,7 @@ class SpatialFc(nn.Module):
 
     def __init__(
         self,
-        spatial_shape=[14, 14],
+        spatial_shape: Tuple[int, int] = (14, 14),
         **kwargs,
     ):
         super().__init__()
@@ -139,6 +141,16 @@ class SpatialFc(nn.Module):
         return x
 
 
+TokenMixtureClassType = t.TypeVar(
+    "TokenMixtureClassType",
+    t.Type[Pooling],
+    t.Type[SpatialFc],
+    t.Type[nn.Identity],
+    t.Type[Attention],
+    t.Type[Callable[..., Tensor]],
+)
+
+
 class MetaFormerBlock(nn.Module):
     """
     Implementation of one MetaFormer block.
@@ -157,7 +169,7 @@ class MetaFormerBlock(nn.Module):
     def __init__(
         self,
         dim,
-        token_mixer=nn.Identity,
+        token_mixer: TokenMixtureClassType = nn.Identity,
         mlp_ratio=4.0,
         act_layer=nn.GELU,
         norm_layer=LayerNormChannel,
@@ -265,21 +277,23 @@ class MetaFormer(nn.Module):
 
     def __init__(
         self,
-        layers,
-        embed_dims=None,
+        layers: Sequence[int],
+        embed_dims: Sequence[int] = None,
         token_mixers=None,
         mlp_ratios=None,
-        norm_layer=LayerNormChannel,
+        norm_layer: Union[
+            Type["LayerNormChannel"], Type["GroupNorm"]
+        ] = LayerNormChannel,
         act_layer=nn.GELU,
         num_classes=1000,
         in_patch_size=7,
         in_stride=4,
         in_pad=2,
-        downsamples=None,
+        downsamples: Sequence[bool] = None,
         down_patch_size=3,
         down_stride=2,
         down_pad=1,
-        add_pos_embs=None,
+        add_pos_embs: Sequence[Optional[Union[Callable, None]]] = None,
         drop_rate=0.0,
         drop_path_rate=0.0,
         use_layer_scale=True,
