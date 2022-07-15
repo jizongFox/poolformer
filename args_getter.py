@@ -221,7 +221,11 @@ def get_train_args():
         help='LR scheduler (default: "step"',
     )
     parser.add_argument(
-        "--lr", type=float, default=1e-3, metavar="LR", help="learning rate (default: 1e-3)"
+        "--lr",
+        type=float,
+        default=1e-3,
+        metavar="LR",
+        help="learning rate (default: 1e-3)",
     )
     parser.add_argument(
         "--lr-noise",
@@ -368,10 +372,16 @@ def get_train_args():
         help="Random resize aspect ratio (default: 0.75 1.33)",
     )
     parser.add_argument(
-        "--hflip", type=float, default=0.5, help="Horizontal flip training aug probability"
+        "--hflip",
+        type=float,
+        default=0.5,
+        help="Horizontal flip training aug probability",
     )
     parser.add_argument(
-        "--vflip", type=float, default=0.0, help="Vertical flip training aug probability"
+        "--vflip",
+        type=float,
+        default=0.0,
+        help="Vertical flip training aug probability",
     )
     parser.add_argument(
         "--color-jitter",
@@ -425,7 +435,10 @@ def get_train_args():
         help="Random erase prob (default: 0.25)",
     )
     parser.add_argument(
-        "--remode", type=str, default="pixel", help='Random erase mode (default: "pixel")'
+        "--remode",
+        type=str,
+        default="pixel",
+        help='Random erase mode (default: "pixel")',
     )
     parser.add_argument(
         "--recount", type=int, default=1, help="Random erase count (default: 1)"
@@ -490,7 +503,11 @@ def get_train_args():
         help='Training interpolation (random, bilinear, bicubic default: "random")',
     )
     parser.add_argument(
-        "--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)"
+        "--drop",
+        type=float,
+        default=0.0,
+        metavar="PCT",
+        help="Dropout rate (default: 0.)",
     )
     parser.add_argument(
         "--drop-connect",
@@ -575,7 +592,10 @@ def get_train_args():
         "--seed", type=int, default=42, metavar="S", help="random seed (default: 42)"
     )
     parser.add_argument(
-        "--worker-seeding", type=str, default="all", help="worker seed mode (default: all)"
+        "--worker-seeding",
+        type=str,
+        default="all",
+        help="worker seed mode (default: all)",
     )
     parser.add_argument(
         "--log-interval",

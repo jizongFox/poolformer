@@ -23,7 +23,7 @@ from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.layers import DropPath, trunc_normal_
 from timm.models.registry import register_model
 
-from .poolformer import PatchEmbed, LayerNormChannel, GroupNorm, Mlp
+from .poolformer import PatchEmbed, LayerNormChannel, GroupNorm, Mlp, Pooling
 
 
 def _cfg(url="", **kwargs):
@@ -64,22 +64,6 @@ class AddPositionEmb(nn.Module):
 
     def forward(self, x):
         return x + self.pos_embed
-
-
-class Pooling(nn.Module):
-    """
-    Implementation of pooling for PoolFormer
-    --pool_size: pooling size
-    """
-
-    def __init__(self, pool_size=3, **kwargs):
-        super().__init__()
-        self.pool = nn.AvgPool2d(
-            pool_size, stride=1, padding=pool_size // 2, count_include_pad=False
-        )
-
-    def forward(self, x):
-        return self.pool(x) - x
 
 
 class Attention(nn.Module):

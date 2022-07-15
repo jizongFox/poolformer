@@ -475,20 +475,20 @@ def main():
 
 
 def train_one_epoch(
-        epoch,
-        model,
-        loader,
-        optimizer,
-        loss_fn,
-        args,
-        *,
-        lr_scheduler=None,
-        saver=None,
-        output_dir=None,
-        amp_autocast=suppress,
-        loss_scaler=None,
-        model_ema=None,
-        mixup_fn=None,
+    epoch,
+    model,
+    loader,
+    optimizer,
+    loss_fn,
+    args,
+    *,
+    lr_scheduler=None,
+    saver=None,
+    output_dir=None,
+    amp_autocast=suppress,
+    loss_scaler=None,
+    model_ema=None,
+    mixup_fn=None,
 ):
     if args.mixup_off_epoch and epoch >= args.mixup_off_epoch:
         if args.prefetcher and loader.mixup_enabled:
@@ -589,9 +589,9 @@ def train_one_epoch(
                     )
 
         if (
-                saver is not None
-                and args.recovery_interval
-                and (last_batch or (batch_idx + 1) % args.recovery_interval == 0)
+            saver is not None
+            and args.recovery_interval
+            and (last_batch or (batch_idx + 1) % args.recovery_interval == 0)
         ):
             saver.save_recovery(epoch, batch_idx=batch_idx)
 
@@ -635,7 +635,7 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix="")
             reduce_factor = args.tta
             if reduce_factor > 1:
                 output = output.unfold(0, reduce_factor, reduce_factor).mean(dim=2)
-                target = target[0: target.size(0): reduce_factor]
+                target = target[0 : target.size(0) : reduce_factor]
 
             loss = loss_fn(output, target)
             acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -656,7 +656,7 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix="")
             batch_time_m.update(time.time() - end)
             end = time.time()
             if args.local_rank == 0 and (
-                    last_batch or batch_idx % args.log_interval == 0
+                last_batch or batch_idx % args.log_interval == 0
             ):
                 log_name = "Test" + log_suffix
                 _logger.info(

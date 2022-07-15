@@ -14,16 +14,16 @@
 """
 PoolFormer implementation
 """
-import os
 import copy
+import os
+import typing as t
+
 import torch
 import torch.nn as nn
-
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.layers import DropPath, trunc_normal_
-from timm.models.registry import register_model
 from timm.models.layers.helpers import to_2tuple
-
+from timm.models.registry import register_model
 
 try:
     from mmseg.models.builder import BACKBONES as seg_BACKBONES
@@ -81,7 +81,7 @@ class PatchEmbed(nn.Module):
         padding=0,
         in_chans=3,
         embed_dim=768,
-        norm_layer=None,
+        norm_layer: t.Union[t.Type["LayerNormChannel"], t.Type["GroupNorm"]] = None,
     ):
         super().__init__()
         patch_size = to_2tuple(patch_size)
@@ -142,8 +142,14 @@ class Pooling(nn.Module):
             pool_size, stride=1, padding=pool_size // 2, count_include_pad=False
         )
 
-    def forward(self, x):
-        return self.pool(x) - x
+    def forward(self, x, subtract_x: bool = True):
+        """
+        Input: tensor in shape [B, C, H, W]
+        subtract_x: if True, subtract x from the output, default True.
+        """
+        if subtract_x:
+            return self.pool(x) - x
+        return self.pool(x)
 
 
 class Mlp(nn.Module):
@@ -154,11 +160,11 @@ class Mlp(nn.Module):
 
     def __init__(
         self,
-        in_features,
-        hidden_features=None,
-        out_features=None,
-        act_layer=nn.GELU,
-        drop=0.0,
+        in_features: int,
+        hidden_features: int = None,
+        out_features: int = None,
+        act_layer: t.Type["nn.GELU"] = nn.GELU,
+        drop: float = 0.0,
     ):
         super().__init__()
         out_features = out_features or in_features
