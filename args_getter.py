@@ -863,11 +863,17 @@ def get_val_args():
         help="path to latest checkpoint (default: none)",
     )
     parser.add_argument(
-        "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
+        "--pretrained",
+        dest="pretrained",
+        action="store_true",
+        help="use pre-trained model",
     )
     parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
     parser.add_argument(
-        "--test-pool", dest="test_pool", action="store_true", help="enable test time pool"
+        "--test-pool",
+        dest="test_pool",
+        action="store_true",
+        help="enable test time pool",
     )
     parser.add_argument(
         "--no-prefetcher",
@@ -886,18 +892,6 @@ def get_val_args():
         action="store_true",
         default=False,
         help="Use channels_last memory layout",
-    )
-    parser.add_argument(
-        "--amp",
-        action="store_true",
-        default=False,
-        help="Use AMP mixed precision. Defaults to Apex, fallback to native Torch AMP.",
-    )
-    parser.add_argument(
-        "--apex-amp",
-        action="store_true",
-        default=False,
-        help="Use NVIDIA Apex AMP mixed precision",
     )
     parser.add_argument(
         "--native-amp",

@@ -102,22 +102,7 @@ def main():
     assert args.rank >= 0
 
     # resolve AMP arguments based on PyTorch / Apex availability
-    use_amp = None
-    if args.amp:
-        # `--amp` chooses native amp before apex (APEX ver not actively maintained)
-        if has_native_amp:
-            args.native_amp = True
-        elif has_apex:
-            args.apex_amp = True
-    if args.apex_amp and has_apex:
-        use_amp = "apex"
-    elif args.native_amp and has_native_amp:
-        use_amp = "native"
-    elif args.apex_amp or args.native_amp:
-        _logger.warning(
-            "Neither APEX or native Torch AMP is available, using float32. "
-            "Install NVIDA apex or upgrade to PyTorch 1.6"
-        )
+    use_amp = "native" if args.native_amp else None
 
     random_seed(args.seed, args.rank)
 
@@ -180,7 +165,6 @@ def main():
             )
 
     if args.torchscript:
-        assert not use_amp == "apex", "Cannot use APEX AMP with torchscripted model"
         assert not args.sync_bn, "Cannot use SyncBatchNorm with torchscripted model"
         model = torch.jit.script(model)
 
@@ -224,7 +208,6 @@ def main():
 
     # setup distributed training
     if args.distributed:
-
         if args.local_rank == 0:
             _logger.info("Using native Torch DistributedDataParallel.")
         model = NativeDDP(
