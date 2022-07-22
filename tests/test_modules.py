@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+import numpy as np
 import torch
 from torch import nn
 
@@ -88,6 +89,55 @@ class TestModules(TestCase):
         )
         output = model(embd(self.input_image))
         print(output.shape)
+
+    @torch.no_grad()
+    def _test_MHA_speed(self, head_num: int, n=16, dim=128, repeat=1000):
+        times = []
+        device = torch.device("cuda:0")
+        dtype = torch.half
+        fixed_input = torch.randn(10, dim, n, n, device=device, dtype=dtype)
+        model = Attention(dim=dim, head_dim=int(dim / head_num)).to(device=device, dtype=dtype)
+        # assert model.num_heads == 1
+        starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()
+
+        model(fixed_input)
+        torch.cuda.synchronize()
+
+        for rep in range(repeat):
+            starter.record()
+            model(fixed_input)
+            ender.record()
+            torch.cuda.synchronize()
+            cur_time = starter.elapsed_time(ender)
+            times.append(cur_time)
+        mean_syn = np.sum(times) / repeat
+        std_syn = np.std(times)
+        return mean_syn
+
+    def test_MHA_speed(self):
+        head_num = [1, 2, 4, 8, 16, 32, 64, 128]
+        speed = [self._test_MHA_speed(i, repeat=1000) for i in head_num]
+        import matplotlib.pyplot as plt
+        plt.plot(head_num, speed, "o-")
+        plt.grid()
+        plt.xlabel("head number")
+        plt.ylabel("speed (ms)")
+        plt.show()
+
+        # ns = list(range(4, 32))
+        # speed = [self._test_MHA_speed(head_num=8, repeat=5000, n=i) for i in ns]
+        # import matplotlib.pyplot as plt
+        # plt.plot(ns, speed)
+        # plt.grid()
+        # plt.show()
+
+        # dims = [32, 64, 128, 256, 512, 1024, 2048, 4096]
+        # speed = [self._test_MHA_speed(head_num=16, repeat=500, dim=d) for d in dims]
+        # import matplotlib.pyplot as plt
+        # plt.plot(dims, speed)
+        # plt.grid()
+        # plt.show()
 
     def test_pos_embed(self):
         pos_embed = AddPositionEmb(dim=384, spatial_shape=(14, 14))
